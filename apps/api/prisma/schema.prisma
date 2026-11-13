@@ -187,6 +187,7 @@ model Proposal {
   status    ProposalStatus @default(DRAFT)
   total     Decimal        @db.Decimal(14, 2) @default(0)
   validUntil DateTime?     @map("valid_until")
+  notes     String?
   createdAt DateTime       @default(now()) @map("created_at")
   company   Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
   client    Client         @relation(fields: [clientId], references: [id])
