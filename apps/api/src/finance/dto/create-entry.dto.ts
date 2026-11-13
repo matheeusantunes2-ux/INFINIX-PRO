@@ -7,6 +7,7 @@ export class CreateEntryDto {
   @IsNumber({ maxDecimalPlaces: 2 }) @Min(0.01) amount!: number;
   @IsDateString() dueAt!: string;
   @IsOptional() @IsString() @MaxLength(80) category?: string;
+  @IsOptional() @IsString() @MaxLength(36) unitId?: string;
   @IsOptional() @IsString() @MaxLength(80) paymentMethod?: string;
   @IsOptional() @IsString() @MaxLength(120) reference?: string;
   @IsOptional() @IsString() @MaxLength(2000) notes?: string;
