@@ -7,6 +7,11 @@ import { AcceptInvitationDto } from './dto/accept-invitation.dto';
 import { hashPassword } from '../auth/crypto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { ModulePermissionDto } from './dto/module-permission.dto';
+import { CreateUnitDto } from './dto/create-unit.dto';
+import { CreateRegionDto } from './dto/create-region.dto';
+import { AssignMemberDto } from './dto/assign-member.dto';
+import { CreateRegionGoalDto } from './dto/create-region-goal.dto';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class CompanyService {
@@ -105,4 +110,82 @@ export class CompanyService {
     await this.prisma.auditLog.create({ data: { companyId: actor.companyId, userId: actor.sub, action: 'MODULE_PERMISSION_CHANGED', entity: 'ModulePermission', entityId: permission.id, metadata: { module: input.module } } });
     return permission;
   }
+
+  private requireAdmin(user: CurrentUser) {
+    if (!['OWNER', 'ADMIN'].includes(user.role)) throw new ForbiddenException('Somente proprietário ou administrador pode administrar a estrutura.');
+  }
+
+  async listUnits(user: CurrentUser) {
+    const membership = await this.prisma.membership.findFirst({ where: { userId: user.sub, companyId: user.companyId, active: true } });
+    const where: any = { companyId: user.companyId };
+    if (user.role === 'MANAGER') where.region = { managerMembershipId: membership?.id };
+    if (user.role === 'MEMBER') where.members = { some: { id: membership?.id } };
+    return this.prisma.unit.findMany({ where, include: { region: { select: { id: true, name: true } }, _count: { select: { members: true } } }, orderBy: { name: 'asc' } });
+  }
+
+  async createUnit(user: CurrentUser, input: CreateUnitDto) {
+    this.requireAdmin(user);
+    if (input.regionId && !await this.prisma.region.findFirst({ where: { id: input.regionId, companyId: user.companyId }, select: { id: true } }))
+      throw new NotFoundException('Regional não encontrada nesta empresa.');
+    const unit = await this.prisma.unit.create({ data: { companyId: user.companyId, name: input.name.trim(), regionId: input.regionId || null } });
+    await this.prisma.auditLog.create({ data: { companyId: user.companyId, userId: user.sub, action: 'UNIT_CREATED', entity: 'Unit', entityId: unit.id } });
+    return unit;
+  }
+
+  async listRegions(user: CurrentUser) {
+    const membership = await this.prisma.membership.findFirst({ where: { userId: user.sub, companyId: user.companyId, active: true } });
+    const where: any = { companyId: user.companyId };
+    if (user.role === 'MANAGER') where.managerMembershipId = membership?.id;
+    if (user.role === 'MEMBER') where.members = { some: { id: membership?.id } };
+    return this.prisma.region.findMany({ where, include: {
+      managerMembership: { select: { id: true, user: { select: { id: true, name: true, email: true } } } },
+      units: { select: { id: true, name: true } },
+      goals: { orderBy: { startsAt: 'desc' } },
+      _count: { select: { members: true, units: true } },
+    }, orderBy: { name: 'asc' } });
+  }
+
+  async createRegion(user: CurrentUser, input: CreateRegionDto) {
+    this.requireAdmin(user);
+    if (input.managerMembershipId) {
+      const manager = await this.prisma.membership.findFirst({ where: { id: input.managerMembershipId, companyId: user.companyId, active: true, role: 'MANAGER' }, select: { id: true } });
+      if (!manager) throw new BadRequestException('O responsável deve ser um gerente ativo desta empresa.');
+    }
+    const region = await this.prisma.region.create({ data: { companyId: user.companyId, name: input.name.trim(), managerMembershipId: input.managerMembershipId || null } });
+    await this.prisma.auditLog.create({ data: { companyId: user.companyId, userId: user.sub, action: 'REGION_CREATED', entity: 'Region', entityId: region.id } });
+    return region;
+  }
+
+  async assignMember(user: CurrentUser, membershipId: string, input: AssignMemberDto) {
+    this.requireAdmin(user);
+    const target = await this.prisma.membership.findFirst({ where: { id: membershipId, companyId: user.companyId, active: true } });
+    if (!target || target.role === 'OWNER') throw new NotFoundException('Membro ativo não encontrado ou protegido.');
+    if (input.regionId) {
+      const region = await this.prisma.region.findFirst({ where: { id: input.regionId, companyId: user.companyId }, select: { id: true } });
+      if (!region) throw new NotFoundException('Regional não encontrada nesta empresa.');
+    }
+    if (input.unitId) {
+      const unit = await this.prisma.unit.findFirst({ where: { id: input.unitId, companyId: user.companyId }, select: { id: true, regionId: true } });
+      if (!unit) throw new NotFoundException('Unidade não encontrada nesta empresa.');
+      if (input.regionId && unit.regionId && input.regionId !== unit.regionId) throw new BadRequestException('A unidade pertence a outra regional.');
+    }
+    const updated = await this.prisma.membership.update({ where: { id: target.id }, data: {
+      unitId: input.unitId === undefined ? target.unitId : input.unitId,
+      regionId: input.regionId === undefined ? target.regionId : input.regionId,
+    }, include: { user: { select: { id: true, name: true, email: true } }, unit: true, region: true } });
+    await this.prisma.auditLog.create({ data: { companyId: user.companyId, userId: user.sub, action: 'MEMBER_ASSIGNMENT_CHANGED', entity: 'Membership', entityId: target.id, metadata: { unitId: updated.unitId, regionId: updated.regionId } } });
+    return updated;
+  }
+
+  async createRegionGoal(user: CurrentUser, regionId: string, input: CreateRegionGoalDto) {
+    this.requireAdmin(user);
+    const region = await this.prisma.region.findFirst({ where: { id: regionId, companyId: user.companyId }, select: { id: true } });
+    if (!region) throw new NotFoundException('Regional não encontrada nesta empresa.');
+    const startsAt = new Date(input.startsAt), endsAt = new Date(input.endsAt);
+    if (endsAt <= startsAt) throw new BadRequestException('A data final deve ser posterior à data inicial.');
+    const goal = await this.prisma.regionGoal.create({ data: { regionId, title: input.title.trim(), target: new Prisma.Decimal(input.target), startsAt, endsAt } });
+    await this.prisma.auditLog.create({ data: { companyId: user.companyId, userId: user.sub, action: 'REGION_GOAL_CREATED', entity: 'RegionGoal', entityId: goal.id } });
+    return goal;
+  }
+
 }
