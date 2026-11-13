@@ -99,8 +99,14 @@ model Membership {
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   @@unique([companyId, userId])
   @@index([userId, active])
+  @@index([companyId, unitId, regionId])
+  managedRegions Region[] @relation("RegionManager")
   permissions ModulePermission[]
   assignedEvents CalendarEvent[]
+  unitId String? @db.Uuid @map("unit_id")
+  regionId String? @db.Uuid @map("region_id")
+  unit Unit? @relation(fields: [unitId], references: [id], onDelete: SetNull)
+  region Region? @relation(fields: [regionId], references: [id], onDelete: SetNull)
   feedComments FeedComment[]
   feedReactions FeedReaction[]
   conversationMembers ConversationMember[]
@@ -116,6 +122,10 @@ model Unit {
   createdAt DateTime @default(now()) @map("created_at")
   company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
   posts     FeedPost[]
+  regionId String? @db.Uuid @map("region_id")
+  region Region? @relation(fields: [regionId], references: [id], onDelete: SetNull)
+  members Membership[]
+  @@index([companyId, regionId])
   @@unique([companyId, name])
   @@map("units")
 }
@@ -144,6 +154,10 @@ model Region {
   companyId String   @db.Uuid @map("company_id")
   name      String
   managerId String?  @db.Uuid @map("manager_id")
+  managerMembershipId String? @db.Uuid @map("manager_membership_id")
+  managerMembership Membership? @relation("RegionManager", fields: [managerMembershipId], references: [id], onDelete: SetNull)
+  units Unit[]
+  members Membership[]
   createdAt DateTime @default(now()) @map("created_at")
   company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
   goals     RegionGoal[]
