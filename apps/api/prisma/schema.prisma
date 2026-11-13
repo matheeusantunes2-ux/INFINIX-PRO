@@ -60,6 +60,7 @@ model Company {
   clients   Client[]
   regions   Region[]
   posts     FeedPost[]
+  notifications Notification[]
   events    CalendarEvent[]
   proposals Proposal[]
   entries   FinancialEntry[]
@@ -82,6 +83,7 @@ model User {
   updatedAt    DateTime     @updatedAt @map("updated_at")
   memberships  Membership[]
   sentMessages Message[]    @relation("MessageSender")
+  authoredPosts FeedPost[]  @relation("FeedPostAuthor")
   auditLogs    AuditLog[]
   @@map("users")
 }
@@ -99,6 +101,11 @@ model Membership {
   @@index([userId, active])
   permissions ModulePermission[]
   assignedEvents CalendarEvent[]
+  feedComments FeedComment[]
+  feedReactions FeedReaction[]
+  conversationMembers ConversationMember[]
+  messageReads MessageRead[]
+  notifications Notification[]
   @@map("memberships")
 }
 
@@ -108,6 +115,7 @@ model Unit {
   name      String
   createdAt DateTime @default(now()) @map("created_at")
   company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  posts     FeedPost[]
   @@unique([companyId, name])
   @@map("units")
 }
@@ -160,9 +168,17 @@ model FeedPost {
   authorId  String   @db.Uuid @map("author_id")
   content   String
   mediaUrl  String?  @map("media_url")
+  announcement Boolean @default(false)
+  unitId    String?  @db.Uuid @map("unit_id")
   createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
   company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  author    User     @relation("FeedPostAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  unit      Unit?    @relation(fields: [unitId], references: [id], onDelete: SetNull)
+  comments  FeedComment[]
+  reactions FeedReaction[]
   @@index([companyId, createdAt])
+  @@index([companyId, announcement, createdAt])
   @@map("feed_posts")
 }
 
@@ -304,6 +320,8 @@ model Conversation {
   createdAt DateTime @default(now()) @map("created_at")
   company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
   messages  Message[]
+  members   ConversationMember[]
+  @@index([companyId, createdAt])
   @@map("conversations")
 }
 
@@ -315,6 +333,7 @@ model Message {
   createdAt      DateTime     @default(now()) @map("created_at")
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   sender         User         @relation("MessageSender", fields: [senderId], references: [id])
+  reads          MessageRead[]
   @@index([conversationId, createdAt])
   @@map("messages")
 }
@@ -362,4 +381,71 @@ model ModulePermission {
   membership  Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
   @@unique([membershipId, module])
   @@map("module_permissions")
+}
+
+
+model FeedComment {
+  id           String @id @default(uuid()) @db.Uuid
+  postId       String @db.Uuid @map("post_id")
+  membershipId String @db.Uuid @map("membership_id")
+  body         String
+  createdAt    DateTime @default(now()) @map("created_at")
+  post         FeedPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  membership   Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  @@index([postId, createdAt])
+  @@map("feed_comments")
+}
+
+model FeedReaction {
+  id           String @id @default(uuid()) @db.Uuid
+  postId       String @db.Uuid @map("post_id")
+  membershipId String @db.Uuid @map("membership_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+  post         FeedPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  membership   Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  @@unique([postId, membershipId])
+  @@index([postId])
+  @@map("feed_reactions")
+}
+
+model ConversationMember {
+  id             String @id @default(uuid()) @db.Uuid
+  conversationId String @db.Uuid @map("conversation_id")
+  membershipId   String @db.Uuid @map("membership_id")
+  joinedAt       DateTime @default(now()) @map("joined_at")
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  membership    Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  @@unique([conversationId, membershipId])
+  @@index([membershipId])
+  @@map("conversation_members")
+}
+
+model MessageRead {
+  id           String @id @default(uuid()) @db.Uuid
+  messageId    String @db.Uuid @map("message_id")
+  membershipId String @db.Uuid @map("membership_id")
+  readAt       DateTime @default(now()) @map("read_at")
+  message      Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  membership   Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  @@unique([messageId, membershipId])
+  @@index([membershipId, readAt])
+  @@map("message_reads")
+}
+
+model Notification {
+  id           String @id @default(uuid()) @db.Uuid
+  companyId    String @db.Uuid @map("company_id")
+  membershipId String @db.Uuid @map("membership_id")
+  type         String
+  title        String
+  body         String
+  resourceType String? @map("resource_type")
+  resourceId   String? @db.Uuid @map("resource_id")
+  readAt       DateTime? @map("read_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+  company      Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  membership   Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  @@index([membershipId, readAt, createdAt])
+  @@index([companyId, createdAt])
+  @@map("notifications")
 }
