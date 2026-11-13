@@ -66,7 +66,7 @@ export class DashboardService {
     };
 
     const scopedRegions = await this.prisma.region.findMany({
-      where: { companyId: user.companyId, ...(user.role === 'MEMBER' ? { id: membership.regionId || '__none__' } : {}), ...(user.role === 'MANAGER' ? { id: { in: visibleRegionIds.length ? visibleRegionIds : ['00000000-0000-0000-0000-000000000000'] } } : {}) },
+      where: { companyId: user.companyId, ...(user.role === 'MEMBER' ? { id: membership.regionId || '00000000-0000-0000-0000-000000000000' } : {}), ...(user.role === 'MANAGER' ? { id: { in: visibleRegionIds.length ? visibleRegionIds : ['00000000-0000-0000-0000-000000000000'] } } : {}) },
       select: { id: true, name: true }, orderBy: { name: 'asc' },
     });
     const regionIds = scopedRegions.map(region => region.id);
