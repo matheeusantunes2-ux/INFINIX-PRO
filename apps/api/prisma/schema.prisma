@@ -65,6 +65,7 @@ model Company {
   entries   FinancialEntry[]
   orders    Order[]
   products  Product[]
+  stockMovements StockMovement[]
   conversations Conversation[]
   auditLogs AuditLog[]
   invitations Invitation[]
@@ -224,6 +225,8 @@ model FinancialEntry {
   paymentMethod String?         @map("payment_method")
   reference   String?
   notes       String?
+  orderId     String?           @unique @db.Uuid @map("order_id")
+  order       Order?            @relation(fields: [orderId], references: [id], onDelete: SetNull)
   createdAt   DateTime          @default(now()) @map("created_at")
   updatedAt   DateTime          @updatedAt @map("updated_at")
   company     Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
@@ -237,9 +240,12 @@ model Product {
   name      String
   sku       String?
   price     Decimal  @db.Decimal(14, 2)
+  stock     Decimal  @default(0) @db.Decimal(14, 3)
+  minStock  Decimal  @default(0) @db.Decimal(14, 3) @map("min_stock")
   active    Boolean  @default(true)
   company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
   orderItems OrderItem[]
+  stockMovements StockMovement[]
   @@unique([companyId, sku])
   @@map("products")
 }
@@ -252,9 +258,13 @@ model Order {
   total     Decimal     @db.Decimal(14, 2) @default(0)
   openedAt  DateTime    @default(now()) @map("opened_at")
   closedAt  DateTime?   @map("closed_at")
+  paymentMethod String? @map("payment_method")
+  notes     String?
   company   Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
   client    Client?     @relation(fields: [clientId], references: [id], onDelete: SetNull)
   items     OrderItem[]
+  financialEntry FinancialEntry?
+  stockMovements StockMovement[]
   @@index([companyId, status, openedAt])
   @@map("orders")
 }
@@ -269,6 +279,22 @@ model OrderItem {
   order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product   Product @relation(fields: [productId], references: [id])
   @@map("order_items")
+}
+
+model StockMovement {
+  id        String   @id @default(uuid()) @db.Uuid
+  companyId String   @db.Uuid @map("company_id")
+  productId String   @db.Uuid @map("product_id")
+  orderId   String?  @db.Uuid @map("order_id")
+  type      String
+  quantity  Decimal  @db.Decimal(14, 3)
+  reason    String?
+  createdAt DateTime @default(now()) @map("created_at")
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  order     Order?   @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  @@index([companyId, productId, createdAt])
+  @@map("stock_movements")
 }
 
 model Conversation {
