@@ -123,11 +123,22 @@ export class FinanceService {
       const unit = await this.prisma.unit.findFirst({ where: { id: unitId, companyId: user.companyId }, select: { id: true } });
       if (!unit) throw new BadRequestException('Unidade inválida para esta empresa.');
     }
-    const entries = await this.prisma.financialEntry.findMany({
-      where: { companyId: user.companyId, dueAt: { gte: start, lte: end }, ...(unitId ? { unitId } : {}) },
-      select: { id: true, type: true, status: true, amount: true, dueAt: true, paidAt: true, unitId: true, unit: { select: { name: true } } },
-      orderBy: { dueAt: 'asc' },
-    });
+    const baseWhere = { companyId: user.companyId, ...(unitId ? { unitId } : {}) };
+    const [entries, cashEntries, overdueEntries] = await this.prisma.$transaction([
+      this.prisma.financialEntry.findMany({
+        where: { ...baseWhere, dueAt: { gte: start, lte: end }, status: { not: 'CANCELLED' } },
+        select: { id: true, type: true, status: true, amount: true, dueAt: true, unitId: true, unit: { select: { name: true } } },
+        orderBy: { dueAt: 'asc' },
+      }),
+      this.prisma.financialEntry.findMany({
+        where: { ...baseWhere, status: 'PAID', paidAt: { gte: start, lte: end } },
+        select: { type: true, amount: true, unitId: true, unit: { select: { name: true } } },
+      }),
+      this.prisma.financialEntry.findMany({
+        where: { ...baseWhere, status: 'PENDING', dueAt: { lt: end } },
+        select: { amount: true, dueAt: true },
+      }),
+    ]);
     const zero = () => new Prisma.Decimal(0);
     const totals = { income: zero(), expense: zero(), received: zero(), paid: zero(), pendingIncome: zero(), pendingExpense: zero() };
     const aging = { days1to30: zero(), days31to60: zero(), days61plus: zero() };
@@ -139,19 +150,25 @@ export class FinanceService {
       byUnit[key] ||= { unit: e.unit?.name || 'Sem unidade', income: zero(), expense: zero(), paid: zero(), received: zero() };
       if (e.type === 'INCOME') {
         totals.income = totals.income.plus(amount); byUnit[key].income = byUnit[key].income.plus(amount);
-        if (e.status === 'PAID') { totals.received = totals.received.plus(amount); byUnit[key].received = byUnit[key].received.plus(amount); }
-        else if (e.status === 'PENDING') totals.pendingIncome = totals.pendingIncome.plus(amount);
+        if (e.status === 'PENDING') totals.pendingIncome = totals.pendingIncome.plus(amount);
       } else {
         totals.expense = totals.expense.plus(amount); byUnit[key].expense = byUnit[key].expense.plus(amount);
-        if (e.status === 'PAID') { totals.paid = totals.paid.plus(amount); byUnit[key].paid = byUnit[key].paid.plus(amount); }
-        else if (e.status === 'PENDING') totals.pendingExpense = totals.pendingExpense.plus(amount);
+        if (e.status === 'PENDING') totals.pendingExpense = totals.pendingExpense.plus(amount);
       }
-      if (e.status === 'PENDING' && e.dueAt < now) {
-        const days = Math.floor((now.getTime() - e.dueAt.getTime()) / 86400000);
-        if (days <= 30) aging.days1to30 = aging.days1to30.plus(amount);
-        else if (days <= 60) aging.days31to60 = aging.days31to60.plus(amount);
-        else aging.days61plus = aging.days61plus.plus(amount);
-      }
+    }
+    for (const e of cashEntries) {
+      const amount = new Prisma.Decimal(e.amount);
+      const key = e.unitId || 'unassigned';
+      byUnit[key] ||= { unit: e.unit?.name || 'Sem unidade', income: zero(), expense: zero(), paid: zero(), received: zero() };
+      if (e.type === 'INCOME') { totals.received = totals.received.plus(amount); byUnit[key].received = byUnit[key].received.plus(amount); }
+      else { totals.paid = totals.paid.plus(amount); byUnit[key].paid = byUnit[key].paid.plus(amount); }
+    }
+    for (const e of overdueEntries) {
+      const amount = new Prisma.Decimal(e.amount);
+      const days = Math.floor((end.getTime() - e.dueAt.getTime()) / 86400000);
+      if (days <= 30) aging.days1to30 = aging.days1to30.plus(amount);
+      else if (days <= 60) aging.days31to60 = aging.days31to60.plus(amount);
+      else aging.days61plus = aging.days61plus.plus(amount);
     }
     const fmt = (v: Prisma.Decimal) => v.toFixed(2);
     return {
