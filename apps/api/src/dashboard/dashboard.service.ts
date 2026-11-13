@@ -23,6 +23,12 @@ export class DashboardService {
     });
     if (!membership) throw new NotFoundException('Vínculo ativo não encontrado.');
 
+    const managedRegions = user.role === 'MANAGER'
+      ? await this.prisma.region.findMany({ where: { companyId: user.companyId, managerMembershipId: membership.id }, select: { id: true } })
+      : [];
+    const visibleRegionIds = user.role === 'MANAGER'
+      ? [...new Set([...managedRegions.map(r => r.id), ...(membership.regionId ? [membership.regionId] : [])])]
+      : [];
     const where: Prisma.OrderWhereInput = {
       companyId: user.companyId,
       status: 'CLOSED',
@@ -30,8 +36,8 @@ export class DashboardService {
       ...(user.role === 'MEMBER' ? { sellerMembershipId: membership.id } : {}),
       ...(user.role === 'MANAGER' ? {
         OR: [
-          { sellerMembership: { regionId: membership.regionId || '__none__' } },
-          { unit: { regionId: membership.regionId || '__none__' } },
+          { sellerMembership: { regionId: { in: visibleRegionIds.length ? visibleRegionIds : ['00000000-0000-0000-0000-000000000000'] } } },
+          { unit: { regionId: { in: visibleRegionIds.length ? visibleRegionIds : ['00000000-0000-0000-0000-000000000000'] } } },
         ],
       } : {}),
     };
