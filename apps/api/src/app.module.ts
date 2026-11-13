@@ -6,8 +6,9 @@ import { AuthModule } from './auth/auth.module';
 import { CompanyModule } from './company/company.module';
 import { ClientsModule } from './clients/clients.module';
 import { ProposalsModule } from './proposals/proposals.module';
+import { CalendarModule } from './calendar/calendar.module';
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true }), PrismaModule, HealthModule, AuthModule, CompanyModule, ClientsModule, ProposalsModule],
+  imports: [ConfigModule.forRoot({ isGlobal: true }), PrismaModule, HealthModule, AuthModule, CompanyModule, ClientsModule, ProposalsModule, CalendarModule],
 })
 export class AppModule {}
