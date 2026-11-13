@@ -28,9 +28,9 @@
 ## Fase 4 — Colaboração e gestão
 - [ ] Chat em tempo real e anexos
 - [ ] Shop Feed com mídia e interações
-- [x] Estrutura de unidades, regionais, alocação de membros e cadastro de metas (indicadores realizados pendentes)
+- [x] Estrutura de unidades, regionais, alocação de membros, metas e dashboard comercial por funcionário/unidade/regional
 - [x] Financeiro e lançamentos básicos (conciliação pendente)
-- [ ] Dashboard e relatórios
+- [x] Dashboard comercial inicial (faturamento de comandas fechadas, ticket médio, ranking e progresso de metas regionais); relatórios avançados pendentes
 
 ## Fase 5 — Produção
 - [ ] Armazenamento de arquivos
