@@ -54,3 +54,16 @@ Exemplo de cadastro:
 ```
 
 Configure `JWT_ACCESS_SECRET` com pelo menos 32 caracteres aleatórios antes de iniciar a API. O token de acesso expira em 15 minutos. Esta etapa ainda não inclui recuperação de senha, refresh token, MFA ou limitação de tentativas; não exponha a API publicamente até essas proteções e os testes de segurança estarem concluídos.
+
+
+## Contexto empresarial e permissões
+
+Todas as rotas privadas devem usar `AuthGuard`. O guard valida a assinatura e expiração do token e consulta novamente o vínculo ativo no PostgreSQL; usuário bloqueado, empresa inativa ou vínculo removido deixam de acessar imediatamente.
+
+Use `@Roles('OWNER', 'ADMIN')` em rotas que exigem perfil específico e combine com `RolesGuard`. Nunca aceite `companyId` enviado pelo navegador como fonte de autorização: use sempre `companyId` derivado do usuário autenticado (`@AuthUser()`). Em toda consulta de dados de negócio, filtre pelo `companyId` do contexto autenticado.
+
+Rotas adicionadas:
+- `GET /api/company/current`: dados da empresa ativa e papel do usuário autenticado.
+- `GET /api/company/members`: lista de membros ativos; disponível para OWNER, ADMIN e MANAGER.
+
+A proteção de tenant precisa ser aplicada em cada novo serviço/repositório e coberta por testes automatizados. Não basta ocultar opções no front-end.
