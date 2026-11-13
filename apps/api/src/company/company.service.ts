@@ -31,6 +31,7 @@ export class CompanyService {
       orderBy: [{ role: 'asc' }, { createdAt: 'asc' }],
       select: { id: true, role: true, active: true, createdAt: true,
         user: { select: { id: true, name: true, email: true, status: true } },
+        unit: { select: { id: true, name: true } }, region: { select: { id: true, name: true } },
         permissions: true },
     });
   }
@@ -167,7 +168,9 @@ export class CompanyService {
     if (input.unitId) {
       const unit = await this.prisma.unit.findFirst({ where: { id: input.unitId, companyId: user.companyId }, select: { id: true, regionId: true } });
       if (!unit) throw new NotFoundException('Unidade não encontrada nesta empresa.');
-      if (input.regionId && unit.regionId && input.regionId !== unit.regionId) throw new BadRequestException('A unidade pertence a outra regional.');
+      const requestedRegionId = input.regionId === undefined ? target.regionId : input.regionId;
+      if (unit.regionId && requestedRegionId && requestedRegionId !== unit.regionId) throw new BadRequestException('A unidade pertence a outra regional.');
+      if (input.regionId === undefined && unit.regionId && !target.regionId) input = { ...input, regionId: unit.regionId };
     }
     const updated = await this.prisma.membership.update({ where: { id: target.id }, data: {
       unitId: input.unitId === undefined ? target.unitId : input.unitId,
