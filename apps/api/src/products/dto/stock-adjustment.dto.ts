@@ -1,0 +1,6 @@
+import { IsIn, IsNumber, IsOptional, IsString, MaxLength, Min } from 'class-validator';
+export class StockAdjustmentDto {
+ @IsIn(['IN','OUT']) direction!: 'IN'|'OUT';
+ @IsNumber({maxDecimalPlaces:3}) @Min(0.001) quantity!: number;
+ @IsOptional() @IsString() @MaxLength(180) reason?: string;
+}
