@@ -103,6 +103,7 @@ model Membership {
   managedRegions Region[] @relation("RegionManager")
   permissions ModulePermission[]
   assignedEvents CalendarEvent[]
+  salesOrders Order[] @relation("OrderSeller")
   unitId String? @db.Uuid @map("unit_id")
   regionId String? @db.Uuid @map("region_id")
   unit Unit? @relation(fields: [unitId], references: [id], onDelete: SetNull)
@@ -122,6 +123,7 @@ model Unit {
   createdAt DateTime @default(now()) @map("created_at")
   company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
   posts     FeedPost[]
+  salesOrders Order[]
   regionId String? @db.Uuid @map("region_id")
   region Region? @relation(fields: [regionId], references: [id], onDelete: SetNull)
   members Membership[]
@@ -284,6 +286,10 @@ model Order {
   id        String      @id @default(uuid()) @db.Uuid
   companyId String      @db.Uuid @map("company_id")
   clientId  String?     @db.Uuid @map("client_id")
+  sellerMembershipId String? @db.Uuid @map("seller_membership_id")
+  unitId String? @db.Uuid @map("unit_id")
+  sellerMembership Membership? @relation("OrderSeller", fields: [sellerMembershipId], references: [id], onDelete: SetNull)
+  unit Unit? @relation(fields: [unitId], references: [id], onDelete: SetNull)
   status    OrderStatus @default(OPEN)
   total     Decimal     @db.Decimal(14, 2) @default(0)
   openedAt  DateTime    @default(now()) @map("opened_at")
@@ -296,6 +302,8 @@ model Order {
   financialEntry FinancialEntry?
   stockMovements StockMovement[]
   @@index([companyId, status, openedAt])
+  @@index([companyId, closedAt, sellerMembershipId])
+  @@index([companyId, closedAt, unitId])
   @@map("orders")
 }
 
