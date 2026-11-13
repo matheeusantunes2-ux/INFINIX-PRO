@@ -5,6 +5,21 @@ on:
   pull_request:
     branches: [main]
 jobs:
+  api-check:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/infinix_pro?schema=public
+      JWT_SECRET: ci-only-secret-that-is-not-used-in-production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm install
+      - run: npx prisma validate --schema apps/api/prisma/schema.prisma
+      - run: npx prisma generate --schema apps/api/prisma/schema.prisma
+      - run: npm run build:api
   web-build:
     runs-on: ubuntu-latest
     steps:
