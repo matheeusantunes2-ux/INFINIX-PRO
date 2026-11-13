@@ -29,7 +29,7 @@
 - [ ] Chat em tempo real e anexos
 - [ ] Shop Feed com mídia e interações
 - [x] Estrutura de unidades, regionais, alocação de membros, metas e dashboard comercial por funcionário/unidade/regional
-- [x] Financeiro e lançamentos básicos (conciliação pendente)
+- [x] Financeiro básico e relatórios gerenciais por competência/caixa, inadimplência por faixa e consolidação por unidade (conciliação bancária pendente)
 - [x] Dashboard comercial inicial (faturamento de comandas fechadas, ticket médio, ranking e progresso de metas regionais); relatórios avançados pendentes
 
 ## Fase 5 — Produção
