@@ -83,7 +83,12 @@ export class DashboardService {
       byUnit: group(o => o.unit?.id || null, o => o.unit?.name || 'Sem unidade'),
       byRegion: [...regional.entries()].map(([id, revenue]) => ({ id, revenue: revenue.toFixed(2) })),
       goals: goals.map(goal => {
-        const realized = regional.get(goal.regionId) || new Prisma.Decimal(0);
+        const goalStart = goal.startsAt > start ? goal.startsAt : start;
+        const goalEnd = goal.endsAt < end ? goal.endsAt : end;
+        const realized = orders.filter(row => {
+          const rowRegion = row.sellerMembership?.regionId || row.unit?.regionId;
+          return rowRegion === goal.regionId && row.closedAt !== null && row.closedAt >= goalStart && row.closedAt <= goalEnd;
+        }).reduce((acc, row) => acc.plus(row.total), new Prisma.Decimal(0));
         const percent = goal.target.isZero() ? new Prisma.Decimal(0) : realized.div(goal.target).mul(100);
         return { id: goal.id, region: goal.region.name, title: goal.title, target: goal.target.toFixed(2),
           realized: realized.toFixed(2), progressPercent: percent.toDecimalPlaces(2).toFixed(2),
