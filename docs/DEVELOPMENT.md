@@ -143,3 +143,37 @@ npx prisma generate
 npx prisma migrate dev --name add_proposal_notes
 npm run build
 ```
+
+
+## Agenda e agendamentos
+
+Rotas protegidas:
+- `GET /api/calendar/events?from=2026-11-01&to=2026-11-30&status=CONFIRMED&page=1&limit=50`: lista por período/status, paginada.
+- `POST /api/calendar/events`: cria agendamento com cliente opcional e responsável opcional.
+- `GET /api/calendar/events/:id`: consulta agendamento e seus vínculos.
+- `PATCH /api/calendar/events/:id`: edita agendamento pendente/confirmado.
+- `PATCH /api/calendar/events/:id/status`: confirma, cancela ou conclui conforme as transições permitidas; OWNER, ADMIN e MANAGER.
+
+Exemplo de criação:
+```json
+{
+  "title": "Atendimento técnico",
+  "description": "Avaliação e instalação.",
+  "startsAt": "2026-11-20T13:00:00.000Z",
+  "endsAt": "2026-11-20T14:00:00.000Z",
+  "clientId": "UUID-DO-CLIENTE",
+  "assignedMembershipId": "UUID-DO-VINCULO-DO-FUNCIONARIO"
+}
+```
+
+O servidor valida duração, cliente ativo e responsável ativo pertencente à mesma empresa. Verifica sobreposição de horários para o mesmo responsável, considerando eventos pendentes/confirmados. O fluxo de status é PENDING → CONFIRMED ou CANCELLED; CONFIRMED → CANCELLED ou COMPLETED. Registros cancelados/concluídos não podem ser editados. Operações geram auditoria.
+
+O schema recebeu `assigned_membership_id` e índices para consultas por responsável. Execute:
+```bash
+cd apps/api
+npx prisma generate
+npx prisma migrate dev --name assign_calendar_events
+npm run build
+``
+
+A checagem de conflito é feita na aplicação; antes de operação concorrente em produção, deve ser reforçada com restrição transacional/garantia no banco e testes de concorrência. Notificações automáticas e lembretes ainda não foram conectados.
