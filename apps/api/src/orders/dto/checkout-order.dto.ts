@@ -1,0 +1,2 @@
+import {IsIn,IsOptional,IsString,MaxLength} from 'class-validator';
+export class CheckoutOrderDto { @IsIn(['CASH','PIX','CREDIT_CARD','DEBIT_CARD','TRANSFER','OTHER']) paymentMethod!:string; @IsOptional() @IsString() @MaxLength(120) reference?:string; }
