@@ -124,6 +124,7 @@ model Unit {
   company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
   posts     FeedPost[]
   salesOrders Order[]
+  financialEntries FinancialEntry[]
   regionId String? @db.Uuid @map("region_id")
   region Region? @relation(fields: [regionId], references: [id], onDelete: SetNull)
   members Membership[]
@@ -259,10 +260,14 @@ model FinancialEntry {
   notes       String?
   orderId     String?           @unique @db.Uuid @map("order_id")
   order       Order?            @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  unitId      String?           @db.Uuid @map("unit_id")
+  unit        Unit?             @relation(fields: [unitId], references: [id], onDelete: SetNull)
   createdAt   DateTime          @default(now()) @map("created_at")
   updatedAt   DateTime          @updatedAt @map("updated_at")
   company     Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
   @@index([companyId, dueAt, status])
+  @@index([companyId, unitId, dueAt])
+  @@index([companyId, paidAt])
   @@map("financial_entries")
 }
 
