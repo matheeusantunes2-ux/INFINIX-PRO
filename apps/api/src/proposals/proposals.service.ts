@@ -45,7 +45,7 @@ export class ProposalsService {
     const number = `PROP-${new Date().toISOString().slice(0,10).replace(/-/g,'')}-${randomUUID().slice(0,6).toUpperCase()}`;
     const proposal = await this.prisma.proposal.create({
       data: { companyId: user.companyId, clientId: client.id, number, total: calculated.total,
-        validUntil: dto.validUntil ? new Date(dto.validUntil) : null,
+        validUntil: dto.validUntil ? new Date(dto.validUntil) : null, notes: dto.notes?.trim() || null,
         items: { create: calculated.data } },
       include: { client: { select: { id: true, name: true, email: true, phone: true } }, items: true },
     });
