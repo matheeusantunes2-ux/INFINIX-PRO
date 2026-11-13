@@ -11,7 +11,13 @@ export class ProductsService {
  constructor(private readonly prisma: PrismaService) {}
  async list(user:CurrentUser,q?:string,page=1,limit=30,lowStock?:string) {
   const p=Math.max(1,Number(page)||1), take=Math.min(100,Math.max(1,Number(limit)||30));
-  const where:Prisma.ProductWhereInput={companyId:user.companyId,active:true,...(q?.trim()?{OR:[{name:{contains:q.trim(),mode:'insensitive'}},{sku:{contains:q.trim(),mode:'insensitive'}}]}:{}),...(lowStock==='true'?{stock:{lte:0}}:{})};
+  const where:Prisma.ProductWhereInput={companyId:user.companyId,active:true,...(q?.trim()?{OR:[{name:{contains:q.trim(),mode:'insensitive'}},{sku:{contains:q.trim(),mode:'insensitive'}}]}:{})};
+  if(lowStock==='true') {
+   const all=await this.prisma.product.findMany({where,orderBy:{name:'asc'}});
+   const filtered=all.filter(item=>item.stock.lessThanOrEqualTo(item.minStock));
+   const items=filtered.slice((p-1)*take,p*take);
+   return {items,pagination:{page:p,limit:take,total:filtered.length,pages:Math.ceil(filtered.length/take)}};
+  }
   const [items,total]=await this.prisma.$transaction([this.prisma.product.findMany({where,orderBy:{name:'asc'},skip:(p-1)*take,take}),this.prisma.product.count({where})]);
   return {items,pagination:{page:p,limit:take,total,pages:Math.ceil(total/take)}};
  }
