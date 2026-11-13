@@ -5,6 +5,7 @@ export class UpdateEntryDto {
   @IsOptional() @IsNumber({ maxDecimalPlaces: 2 }) @Min(0.01) amount?: number;
   @IsOptional() @IsDateString() dueAt?: string;
   @IsOptional() @IsString() @MaxLength(80) category?: string | null;
+  @IsOptional() @IsString() @MaxLength(36) unitId?: string | null;
   @IsOptional() @IsString() @MaxLength(80) paymentMethod?: string | null;
   @IsOptional() @IsString() @MaxLength(120) reference?: string | null;
   @IsOptional() @IsString() @MaxLength(2000) notes?: string | null;
