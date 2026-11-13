@@ -110,3 +110,36 @@ cd apps/api
 npx prisma generate
 npx prisma migrate dev --name add_client_archiving
 ```
+
+
+## Propostas comerciais
+
+Rotas protegidas:
+- `GET /api/proposals?page=1&limit=20&status=DRAFT`: lista paginada, com filtro opcional por status.
+- `POST /api/proposals`: cria proposta vinculada a um cliente ativo da mesma empresa, com itens, quantidades, preços, observações e validade.
+- `GET /api/proposals/:id`: consulta proposta, cliente e itens.
+- `PATCH /api/proposals/:id`: altera validade e/ou itens enquanto estiver em rascunho.
+- `PATCH /api/proposals/:id/status`: altera status conforme fluxo permitido; OWNER, ADMIN e MANAGER.
+
+Exemplo de criação:
+```json
+{
+  "clientId": "UUID-DO-CLIENTE",
+  "validUntil": "2026-12-15T23:59:59.000Z",
+  "notes": "Condições comerciais e prazo de entrega.",
+  "items": [
+    { "description": "Instalação e configuração", "quantity": 1, "unitPrice": 180.00 },
+    { "description": "Suporte articulado", "quantity": 2, "unitPrice": 95.50 }
+  ]
+}
+```
+
+O total é calculado no servidor com Decimal (não é aceito total enviado pelo navegador). Fluxo de status: DRAFT → SENT → APPROVED ou REJECTED. Propostas aprovadas/rejeitadas não podem voltar ao fluxo anterior; propostas em rascunho são as únicas editáveis. Alterações de status e cadastro/edição geram auditoria. A consulta sempre filtra pela empresa do usuário autenticado.
+
+Foi acrescentado o campo opcional `proposals.notes`; gere o Prisma Client e aplique migration:
+```bash
+cd apps/api
+npx prisma generate
+npx prisma migrate dev --name add_proposal_notes
+npm run build
+```
