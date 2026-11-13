@@ -19,17 +19,17 @@
 - [ ] Testes negativos de isolamento entre empresas
 
 ## Fase 3 — Operação comercial
-- [ ] Clientes e contatos
-- [ ] Produtos e catálogo
-- [ ] Propostas, itens, aprovação e PDF
-- [ ] Comandas, itens, pagamentos e fechamento
-- [ ] Agenda e agendamentos
+- [x] Clientes e contatos (API inicial)
+- [x] Produtos e catálogo (API inicial)
+- [x] Propostas, itens e aprovação (PDF pendente)
+- [x] Comandas, itens, fechamento e baixa de estoque (integração de pagamento pendente)
+- [x] Agenda e agendamentos
 
 ## Fase 4 — Colaboração e gestão
 - [ ] Chat em tempo real e anexos
 - [ ] Shop Feed com mídia e interações
-- [ ] Regiões, equipes e metas
-- [ ] Financeiro e conciliação básica
+- [x] Estrutura de unidades, regionais, alocação de membros e cadastro de metas (indicadores realizados pendentes)
+- [x] Financeiro e lançamentos básicos (conciliação pendente)
 - [ ] Dashboard e relatórios
 
 ## Fase 5 — Produção
