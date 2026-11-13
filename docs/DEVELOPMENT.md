@@ -67,3 +67,27 @@ Rotas adicionadas:
 - `GET /api/company/members`: lista de membros ativos; disponível para OWNER, ADMIN e MANAGER.
 
 A proteção de tenant precisa ser aplicada em cada novo serviço/repositório e coberta por testes automatizados. Não basta ocultar opções no front-end.
+
+
+## Gestão de equipe (implementação inicial)
+
+Rotas protegidas:
+- `GET /api/company/members`: membros ativos da empresa do token.
+- `POST /api/company/invitations`: cria convite (OWNER/ADMIN). O token de convite é retornado uma única vez para compartilhamento seguro; validade de 7 dias.
+- `PATCH /api/company/members/:id/role`: altera cargo (somente OWNER).
+- `PATCH /api/company/members/:id/block`: bloqueia o vínculo do membro (OWNER/ADMIN).
+- `PATCH /api/company/members/:id/reactivate`: reativa o vínculo (OWNER/ADMIN).
+- `PUT /api/company/members/:id/permissions`: grava permissões por módulo (OWNER/ADMIN).
+- `POST /api/invitations/accept`: aceita convite e cria a conta do novo membro.
+
+Exemplo de convite:
+```json
+{ "name": "Pessoa da equipe", "email": "pessoa@empresa.com", "role": "MEMBER" }
+```
+
+Exemplo de permissão:
+```json
+{ "module": "clients", "canView": true, "canCreate": true, "canEdit": true, "canDelete": false }
+```
+
+O token retornado pela criação deve ser enviado ao convidado por canal confiável. Ainda não existe envio automático de e-mail. Nesta versão, convites para e-mails que já possuem conta são recusados para não permitir redefinição de senha por terceiros. O bloqueio desativa o vínculo apenas nesta empresa; contas compartilhadas por outras empresas permanecem ativas nelas. As permissões por módulo já são persistidas, mas cada módulo deverá consultar essas permissões no servidor antes de autorizar ações.
