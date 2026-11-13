@@ -91,3 +91,22 @@ Exemplo de permissão:
 ```
 
 O token retornado pela criação deve ser enviado ao convidado por canal confiável. Ainda não existe envio automático de e-mail. Nesta versão, convites para e-mails que já possuem conta são recusados para não permitir redefinição de senha por terceiros. O bloqueio desativa o vínculo apenas nesta empresa; contas compartilhadas por outras empresas permanecem ativas nelas. As permissões por módulo já são persistidas, mas cada módulo deverá consultar essas permissões no servidor antes de autorizar ações.
+
+
+## Cadastro e gestão de clientes
+
+Rotas protegidas por autenticação e isolamento da empresa do usuário:
+- `GET /api/clients?q=&page=1&limit=20`: lista paginada com pesquisa por nome, e-mail, telefone ou documento.
+- `POST /api/clients`: cadastra cliente.
+- `GET /api/clients/:id`: consulta cadastro e resumo de propostas, agenda e comandas relacionadas.
+- `PATCH /api/clients/:id`: atualiza os dados.
+- `DELETE /api/clients/:id`: arquiva o cadastro (não apaga histórico); OWNER, ADMIN e MANAGER.
+
+O identificador da empresa é sempre obtido do token validado no servidor. A listagem e a consulta individual ignoram registros arquivados. O cadastro aceita nome obrigatório e e-mail, telefone, documento e observações opcionais. A pesquisa é paginada, com limite máximo de 100 registros por página.
+
+A coluna `clients.active` foi adicionada ao schema Prisma para permitir arquivamento sem perder referências históricas. Antes de executar a API, gere o Prisma Client e aplique uma migration:
+```bash
+cd apps/api
+npx prisma generate
+npx prisma migrate dev --name add_client_archiving
+```
