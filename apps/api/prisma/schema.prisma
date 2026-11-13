@@ -97,6 +97,7 @@ model Membership {
   @@unique([companyId, userId])
   @@index([userId, active])
   permissions ModulePermission[]
+  assignedEvents CalendarEvent[]
   @@map("memberships")
 }
 
@@ -168,6 +169,7 @@ model CalendarEvent {
   id          String            @id @default(uuid()) @db.Uuid
   companyId   String            @db.Uuid @map("company_id")
   clientId    String?           @db.Uuid @map("client_id")
+  assignedMembershipId String? @db.Uuid @map("assigned_membership_id")
   title       String
   description String?
   startsAt    DateTime          @map("starts_at")
@@ -175,7 +177,9 @@ model CalendarEvent {
   status      AppointmentStatus @default(PENDING)
   company     Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
   client      Client?           @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  assignedMembership Membership? @relation(fields: [assignedMembershipId], references: [id], onDelete: SetNull)
   @@index([companyId, startsAt])
+  @@index([companyId, assignedMembershipId, startsAt])
   @@map("calendar_events")
 }
 
