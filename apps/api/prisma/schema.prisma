@@ -7,13 +7,45 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum UserStatus { ACTIVE INVITED BLOCKED }
-enum MemberRole { OWNER ADMIN MANAGER MEMBER }
-enum ProposalStatus { DRAFT SENT APPROVED REJECTED EXPIRED }
-enum AppointmentStatus { PENDING CONFIRMED CANCELLED COMPLETED }
-enum TransactionType { INCOME EXPENSE }
-enum TransactionStatus { PENDING PAID CANCELLED }
-enum OrderStatus { OPEN IN_PROGRESS CLOSED CANCELLED }
+enum UserStatus {
+  ACTIVE
+  INVITED
+  BLOCKED
+}
+enum MemberRole {
+  OWNER
+  ADMIN
+  MANAGER
+  MEMBER
+}
+enum ProposalStatus {
+  DRAFT
+  SENT
+  APPROVED
+  REJECTED
+  EXPIRED
+}
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+enum TransactionType {
+  INCOME
+  EXPENSE
+}
+enum TransactionStatus {
+  PENDING
+  PAID
+  CANCELLED
+}
+enum OrderStatus {
+  OPEN
+  IN_PROGRESS
+  CLOSED
+  CANCELLED
+}
 
 model Company {
   id        String   @id @default(uuid()) @db.Uuid
