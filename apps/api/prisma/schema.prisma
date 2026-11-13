@@ -1,0 +1,266 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserStatus { ACTIVE INVITED BLOCKED }
+enum MemberRole { OWNER ADMIN MANAGER MEMBER }
+enum ProposalStatus { DRAFT SENT APPROVED REJECTED EXPIRED }
+enum AppointmentStatus { PENDING CONFIRMED CANCELLED COMPLETED }
+enum TransactionType { INCOME EXPENSE }
+enum TransactionStatus { PENDING PAID CANCELLED }
+enum OrderStatus { OPEN IN_PROGRESS CLOSED CANCELLED }
+
+model Company {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  slug      String   @unique
+  taxId     String?  @map("tax_id")
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  members   Membership[]
+  units     Unit[]
+  clients   Client[]
+  regions   Region[]
+  posts     FeedPost[]
+  events    CalendarEvent[]
+  proposals Proposal[]
+  entries   FinancialEntry[]
+  orders    Order[]
+  products  Product[]
+  conversations Conversation[]
+  auditLogs AuditLog[]
+  @@map("companies")
+}
+
+model User {
+  id           String       @id @default(uuid()) @db.Uuid
+  name         String
+  email        String       @unique
+  passwordHash String       @map("password_hash")
+  status       UserStatus   @default(INVITED)
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+  memberships  Membership[]
+  sentMessages Message[]    @relation("MessageSender")
+  auditLogs    AuditLog[]
+  @@map("users")
+}
+
+model Membership {
+  id        String     @id @default(uuid()) @db.Uuid
+  companyId String     @db.Uuid @map("company_id")
+  userId    String     @db.Uuid @map("user_id")
+  role      MemberRole @default(MEMBER)
+  active    Boolean    @default(true)
+  createdAt DateTime   @default(now()) @map("created_at")
+  company   Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([companyId, userId])
+  @@index([userId, active])
+  @@map("memberships")
+}
+
+model Unit {
+  id        String   @id @default(uuid()) @db.Uuid
+  companyId String   @db.Uuid @map("company_id")
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  @@unique([companyId, name])
+  @@map("units")
+}
+
+model Client {
+  id        String   @id @default(uuid()) @db.Uuid
+  companyId String   @db.Uuid @map("company_id")
+  name      String
+  email     String?
+  phone     String?
+  document  String?
+  notes     String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  proposals Proposal[]
+  events    CalendarEvent[]
+  orders    Order[]
+  @@index([companyId, name])
+  @@map("clients")
+}
+
+model Region {
+  id        String   @id @default(uuid()) @db.Uuid
+  companyId String   @db.Uuid @map("company_id")
+  name      String
+  managerId String?  @db.Uuid @map("manager_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  goals     RegionGoal[]
+  @@unique([companyId, name])
+  @@map("regions")
+}
+
+model RegionGoal {
+  id        String   @id @default(uuid()) @db.Uuid
+  regionId  String   @db.Uuid @map("region_id")
+  title     String
+  target    Decimal  @db.Decimal(14, 2)
+  startsAt  DateTime @map("starts_at")
+  endsAt    DateTime @map("ends_at")
+  region    Region   @relation(fields: [regionId], references: [id], onDelete: Cascade)
+  @@map("region_goals")
+}
+
+model FeedPost {
+  id        String   @id @default(uuid()) @db.Uuid
+  companyId String   @db.Uuid @map("company_id")
+  authorId  String   @db.Uuid @map("author_id")
+  content   String
+  mediaUrl  String?  @map("media_url")
+  createdAt DateTime @default(now()) @map("created_at")
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  @@index([companyId, createdAt])
+  @@map("feed_posts")
+}
+
+model CalendarEvent {
+  id          String            @id @default(uuid()) @db.Uuid
+  companyId   String            @db.Uuid @map("company_id")
+  clientId    String?           @db.Uuid @map("client_id")
+  title       String
+  description String?
+  startsAt    DateTime          @map("starts_at")
+  endsAt      DateTime          @map("ends_at")
+  status      AppointmentStatus @default(PENDING)
+  company     Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  client      Client?           @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  @@index([companyId, startsAt])
+  @@map("calendar_events")
+}
+
+model Proposal {
+  id        String         @id @default(uuid()) @db.Uuid
+  companyId String         @db.Uuid @map("company_id")
+  clientId  String         @db.Uuid @map("client_id")
+  number    String
+  status    ProposalStatus @default(DRAFT)
+  total     Decimal        @db.Decimal(14, 2) @default(0)
+  validUntil DateTime?     @map("valid_until")
+  createdAt DateTime       @default(now()) @map("created_at")
+  company   Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  client    Client         @relation(fields: [clientId], references: [id])
+  items     ProposalItem[]
+  @@unique([companyId, number])
+  @@map("proposals")
+}
+
+model ProposalItem {
+  id          String   @id @default(uuid()) @db.Uuid
+  proposalId  String   @db.Uuid @map("proposal_id")
+  description String
+  quantity    Decimal  @db.Decimal(12, 3)
+  unitPrice   Decimal  @db.Decimal(14, 2) @map("unit_price")
+  total       Decimal  @db.Decimal(14, 2)
+  proposal    Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  @@map("proposal_items")
+}
+
+model FinancialEntry {
+  id          String            @id @default(uuid()) @db.Uuid
+  companyId   String            @db.Uuid @map("company_id")
+  type        TransactionType
+  status      TransactionStatus @default(PENDING)
+  description String
+  amount      Decimal           @db.Decimal(14, 2)
+  dueAt       DateTime          @map("due_at")
+  paidAt      DateTime?         @map("paid_at")
+  category    String?
+  createdAt   DateTime          @default(now()) @map("created_at")
+  company     Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  @@index([companyId, dueAt, status])
+  @@map("financial_entries")
+}
+
+model Product {
+  id        String   @id @default(uuid()) @db.Uuid
+  companyId String   @db.Uuid @map("company_id")
+  name      String
+  sku       String?
+  price     Decimal  @db.Decimal(14, 2)
+  active    Boolean  @default(true)
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  orderItems OrderItem[]
+  @@unique([companyId, sku])
+  @@map("products")
+}
+
+model Order {
+  id        String      @id @default(uuid()) @db.Uuid
+  companyId String      @db.Uuid @map("company_id")
+  clientId  String?     @db.Uuid @map("client_id")
+  status    OrderStatus @default(OPEN)
+  total     Decimal     @db.Decimal(14, 2) @default(0)
+  openedAt  DateTime    @default(now()) @map("opened_at")
+  closedAt  DateTime?   @map("closed_at")
+  company   Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  client    Client?     @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  items     OrderItem[]
+  @@index([companyId, status, openedAt])
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String  @id @default(uuid()) @db.Uuid
+  orderId   String  @db.Uuid @map("order_id")
+  productId String  @db.Uuid @map("product_id")
+  quantity  Decimal @db.Decimal(12, 3)
+  unitPrice Decimal @db.Decimal(14, 2) @map("unit_price")
+  total     Decimal @db.Decimal(14, 2)
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id])
+  @@map("order_items")
+}
+
+model Conversation {
+  id        String   @id @default(uuid()) @db.Uuid
+  companyId String   @db.Uuid @map("company_id")
+  title     String?
+  createdAt DateTime @default(now()) @map("created_at")
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  messages  Message[]
+  @@map("conversations")
+}
+
+model Message {
+  id             String       @id @default(uuid()) @db.Uuid
+  conversationId String       @db.Uuid @map("conversation_id")
+  senderId       String       @db.Uuid @map("sender_id")
+  body           String
+  createdAt      DateTime     @default(now()) @map("created_at")
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         User         @relation("MessageSender", fields: [senderId], references: [id])
+  @@index([conversationId, createdAt])
+  @@map("messages")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  companyId String   @db.Uuid @map("company_id")
+  userId    String?  @db.Uuid @map("user_id")
+  action    String
+  entity    String
+  entityId  String?  @map("entity_id")
+  metadata  Json?
+  ipAddress String?  @map("ip_address")
+  createdAt DateTime @default(now()) @map("created_at")
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  @@index([companyId, createdAt])
+  @@map("audit_logs")
+}
