@@ -4,12 +4,13 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 jobs:
   api-check:
     runs-on: ubuntu-latest
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/infinix_pro?schema=public
-      JWT_SECRET: ci-only-secret-that-is-not-used-in-production
+      JWT_ACCESS_SECRET: ci-only-secret-that-is-not-used-in-production-32-chars-minimum
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
