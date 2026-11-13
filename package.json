@@ -1,0 +1,15 @@
+{
+  "name": "infinix-pro",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": ["apps/api", "apps/web"],
+  "scripts": {
+    "dev:api": "npm run start:dev --workspace @infinix-pro/api",
+    "dev:web": "npm run dev --workspace @infinix-pro/web",
+    "build:api": "npm run build --workspace @infinix-pro/api",
+    "build:web": "npm run build --workspace @infinix-pro/web",
+    "db:up": "docker compose -f infra/docker-compose.yml up -d",
+    "db:down": "docker compose -f infra/docker-compose.yml down"
+  },
+  "engines": { "node": ">=20" }
+}
