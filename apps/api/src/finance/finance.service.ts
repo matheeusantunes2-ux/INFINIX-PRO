@@ -143,7 +143,6 @@ export class FinanceService {
     const totals = { income: zero(), expense: zero(), received: zero(), paid: zero(), pendingIncome: zero(), pendingExpense: zero() };
     const aging = { days1to30: zero(), days31to60: zero(), days61plus: zero() };
     const byUnit: Record<string, { unit: string; income: Prisma.Decimal; expense: Prisma.Decimal; paid: Prisma.Decimal; received: Prisma.Decimal }> = {};
-    const now = new Date();
     for (const e of entries) {
       const amount = new Prisma.Decimal(e.amount);
       const key = e.unitId || 'unassigned';
