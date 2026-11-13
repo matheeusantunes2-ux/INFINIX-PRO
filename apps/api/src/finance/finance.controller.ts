@@ -13,12 +13,15 @@ import { PayEntryDto } from './dto/pay-entry.dto';
 export class FinanceController {
   constructor(private readonly finance: FinanceService) {}
 
+  @Get('reports')
+  reports(@AuthUser() user: CurrentUser, @Query('from') from?: string, @Query('to') to?: string, @Query('unitId') unitId?: string) { return this.finance.reports(user, from, to, unitId); }
+
   @Get('summary')
   summary(@AuthUser() user: CurrentUser, @Query('month') month?: string) { return this.finance.summary(user, month); }
 
   @Get('entries')
-  list(@AuthUser() user: CurrentUser, @Query('page') page?: string, @Query('limit') limit?: string, @Query('type') type?: string, @Query('status') status?: string, @Query('category') category?: string, @Query('from') from?: string, @Query('to') to?: string, @Query('overdue') overdue?: string) {
-    return this.finance.list(user, Number(page) || 1, Number(limit) || 20, type, status, category, from, to, overdue);
+  list(@AuthUser() user: CurrentUser, @Query('page') page?: string, @Query('limit') limit?: string, @Query('type') type?: string, @Query('status') status?: string, @Query('category') category?: string, @Query('from') from?: string, @Query('to') to?: string, @Query('overdue') overdue?: string, @Query('unitId') unitId?: string) {
+    return this.finance.list(user, Number(page) || 1, Number(limit) || 20, type, status, category, from, to, overdue, unitId);
   }
 
   @Post('entries')
