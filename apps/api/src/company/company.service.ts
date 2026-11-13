@@ -35,8 +35,7 @@ export class CompanyService {
     const email = input.email.trim().toLowerCase();
     const existingUser = await this.prisma.user.findUnique({ where: { email } });
     if (existingUser) {
-      const existingMembership = await this.prisma.membership.findUnique({ where: { companyId_userId: { companyId: user.companyId, userId: existingUser.id } } });
-      if (existingMembership) throw new ConflictException('Este usuário já possui vínculo com a empresa.');
+      throw new ConflictException('Este e-mail já possui uma conta. O fluxo de convite para usuários existentes será habilitado com autenticação e aceite pela conta.');
     }
     const pending = await this.prisma.invitation.findFirst({ where: { companyId: user.companyId, email, acceptedAt: null, expiresAt: { gt: new Date() } } });
     if (pending) throw new ConflictException('Já existe um convite pendente para este e-mail.');
@@ -59,10 +58,10 @@ export class CompanyService {
     }
     const passwordHash = await hashPassword(input.password);
     return this.prisma.$transaction(async tx => {
-      const user = await tx.user.upsert({
-        where: { email: invitation.email },
-        update: { name: invitation.name, passwordHash, status: 'ACTIVE' },
-        create: { name: invitation.name, email: invitation.email, passwordHash, status: 'ACTIVE' },
+      const existingUser = await tx.user.findUnique({ where: { email: invitation.email } });
+      if (existingUser) throw new ConflictException('Este e-mail já possui uma conta. Entre com a conta existente para aceitar convites.');
+      const user = await tx.user.create({
+        data: { name: invitation.name, email: invitation.email, passwordHash, status: 'ACTIVE' },
       });
       const membership = await tx.membership.create({
         data: { companyId: invitation.companyId, userId: user.id, role: invitation.role, active: true },
