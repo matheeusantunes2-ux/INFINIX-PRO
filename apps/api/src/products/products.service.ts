@@ -46,7 +46,8 @@ export class ProductsService {
    if(!product) throw new NotFoundException('Produto não encontrado.');
    if(dto.direction==='OUT' && product.stock.lessThan(qty)) throw new BadRequestException('Estoque insuficiente.');
    const delta=dto.direction==='IN'?qty:qty.negated();
-   await tx.product.updateMany({where:{id,companyId:user.companyId,...(dto.direction==='OUT'?{stock:{gte:qty}}:{})},data:{stock:{increment:delta}}});
+   const changed=await tx.product.updateMany({where:{id,companyId:user.companyId,active:true,...(dto.direction==='OUT'?{stock:{gte:qty}}:{})},data:{stock:{increment:delta}}});
+   if(!changed.count) throw new BadRequestException('Estoque insuficiente ou produto indisponível.');
    const movement=await tx.stockMovement.create({data:{companyId:user.companyId,productId:id,type:dto.direction,quantity:qty,reason:dto.reason?.trim()||null}});
    await tx.auditLog.create({data:{companyId:user.companyId,userId:user.sub,action:'STOCK_ADJUSTED',entity:'Product',entityId:id,metadata:{direction:dto.direction,quantity:dto.quantity}}});
    return {movement,stock:(await tx.product.findUniqueOrThrow({where:{id}})).stock};
