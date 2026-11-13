@@ -11,11 +11,12 @@ export class DashboardService {
     const now = new Date();
     const start = from ? new Date(from) : new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
     const endInput = to ? new Date(to) : new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
-    if (!Number.isFinite(start.getTime()) || !Number.isFinite(endInput.getTime()) || endInput <= start)
-      throw new BadRequestException('Período inválido. Informe datas ISO e uma data final posterior à inicial.');
+    if (!Number.isFinite(start.getTime()) || !Number.isFinite(endInput.getTime()))
+      throw new BadRequestException('Período inválido. Informe datas ISO válidas.');
     const end = new Date(endInput);
     // O parâmetro "to" é inclusivo por dia quando informado sem horário.
-    if (to && /^\d{4}-\d{2}-\d{2}$/.test(to)) end.setUTCDate(end.getUTCDate() + 1);
+    if (to && /^\\d{4}-\\d{2}-\\d{2}$/.test(to)) end.setUTCDate(end.getUTCDate() + 1);
+    if (end <= start) throw new BadRequestException('A data final deve ser posterior à data inicial.');
 
     const membership = await this.prisma.membership.findFirst({
       where: { companyId: user.companyId, userId: user.sub, active: true },
