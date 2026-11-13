@@ -7,6 +7,10 @@ import { CompanyService } from './company.service';
 import { InviteMemberDto } from './dto/invite-member.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { ModulePermissionDto } from './dto/module-permission.dto';
+import { CreateUnitDto } from './dto/create-unit.dto';
+import { CreateRegionDto } from './dto/create-region.dto';
+import { AssignMemberDto } from './dto/assign-member.dto';
+import { CreateRegionGoalDto } from './dto/create-region-goal.dto';
 
 @Controller('company')
 @UseGuards(AuthGuard, RolesGuard)
@@ -42,4 +46,26 @@ export class CompanyController {
   setPermission(@AuthUser() user: CurrentUser, @Param('id') id: string, @Body() body: ModulePermissionDto) {
     return this.companies.setPermission(user, id, body);
   }
+  @Get('units')
+  listUnits(@AuthUser() user: CurrentUser) { return this.companies.listUnits(user); }
+
+  @Post('units')
+  @Roles('OWNER', 'ADMIN')
+  createUnit(@AuthUser() user: CurrentUser, @Body() body: CreateUnitDto) { return this.companies.createUnit(user, body); }
+
+  @Get('regions')
+  @Roles('OWNER', 'ADMIN', 'MANAGER', 'MEMBER')
+  listRegions(@AuthUser() user: CurrentUser) { return this.companies.listRegions(user); }
+
+  @Post('regions')
+  @Roles('OWNER', 'ADMIN')
+  createRegion(@AuthUser() user: CurrentUser, @Body() body: CreateRegionDto) { return this.companies.createRegion(user, body); }
+
+  @Patch('members/:id/assignment')
+  @Roles('OWNER', 'ADMIN')
+  assignMember(@AuthUser() user: CurrentUser, @Param('id') id: string, @Body() body: AssignMemberDto) { return this.companies.assignMember(user, id, body); }
+
+  @Post('regions/:id/goals')
+  @Roles('OWNER', 'ADMIN')
+  createRegionGoal(@AuthUser() user: CurrentUser, @Param('id') id: string, @Body() body: CreateRegionGoalDto) { return this.companies.createRegionGoal(user, id, body); }
 }
