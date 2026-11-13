@@ -65,7 +65,11 @@ export class DashboardService {
         .sort((a, b) => Number(b.revenue) - Number(a.revenue));
     };
 
-    const regionIds = [...new Set(orders.map(o => o.sellerMembership?.regionId || o.unit?.regionId).filter((v): v is string => !!v))];
+    const scopedRegions = await this.prisma.region.findMany({
+      where: { companyId: user.companyId, ...(user.role === 'MEMBER' ? { id: membership.regionId || '__none__' } : {}), ...(user.role === 'MANAGER' ? { id: { in: visibleRegionIds.length ? visibleRegionIds : ['00000000-0000-0000-0000-000000000000'] } } : {}) },
+      select: { id: true, name: true }, orderBy: { name: 'asc' },
+    });
+    const regionIds = scopedRegions.map(region => region.id);
     const goalWhere: Prisma.RegionGoalWhereInput = {
       regionId: { in: regionIds.length ? regionIds : ['00000000-0000-0000-0000-000000000000'] },
       startsAt: { lt: end }, endsAt: { gte: start },
@@ -81,7 +85,7 @@ export class DashboardService {
       summary: { orders: orders.length, revenue: total.toFixed(2), averageTicket: orders.length ? total.div(orders.length).toFixed(2) : '0.00' },
       byEmployee: group(o => o.sellerMembership?.id || null, o => o.sellerMembership?.user.name || 'Sem responsável'),
       byUnit: group(o => o.unit?.id || null, o => o.unit?.name || 'Sem unidade'),
-      byRegion: [...regional.entries()].map(([id, revenue]) => ({ id, revenue: revenue.toFixed(2) })),
+      byRegion: scopedRegions.map(region => ({ id: region.id, name: region.name, revenue: (regional.get(region.id) || new Prisma.Decimal(0)).toFixed(2) })),
       goals: goals.map(goal => {
         const goalStart = goal.startsAt > start ? goal.startsAt : start;
         const goalEnd = goal.endsAt < end ? goal.endsAt : end;
