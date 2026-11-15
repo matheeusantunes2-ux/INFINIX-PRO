@@ -16,10 +16,6 @@ export class AuthService {
     if (!bootstrapKey || bootstrapKey !== configuredKey) {
       throw new ForbiddenException('Chave de autorização inválida.');
     }
-    const registeredUsers = await this.prisma.user.count();
-    if (registeredUsers > 0) {
-      throw new ForbiddenException('O cadastro inicial já foi utilizado. Novos usuários devem ser convidados pelo administrador.');
-    }
     const email = input.email.trim().toLowerCase();
     const slug = input.companySlug.trim().toLowerCase();
     const [existingUser, existingCompany] = await Promise.all([
@@ -31,6 +27,10 @@ export class AuthService {
 
     const passwordHash = await hashPassword(input.password);
     const created = await this.prisma.$transaction(async (tx) => {
+      const registeredUsers = await tx.user.count();
+      if (registeredUsers > 0) {
+        throw new ForbiddenException('O cadastro inicial já foi utilizado. Novos usuários devem ser convidados pelo administrador.');
+      }
       const company = await tx.company.create({ data: { name: input.companyName.trim(), slug } });
       const user = await tx.user.create({
         data: { name: input.name.trim(), email, passwordHash, status: 'ACTIVE' },
@@ -42,7 +42,7 @@ export class AuthService {
         data: { companyId: company.id, userId: user.id, action: 'COMPANY_REGISTERED', entity: 'Company', entityId: company.id },
       });
       return { company, user, membership };
-    });
+    }, { isolationLevel: 'Serializable' });
     const accessToken = signAccessToken({ sub: created.user.id, companyId: created.company.id, role: created.membership.role });
     return {
       accessToken, tokenType: 'Bearer', expiresIn: 900,
