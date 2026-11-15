@@ -327,6 +327,7 @@ model OrderItem {
   total     Decimal @db.Decimal(14, 2)
   order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product   Product @relation(fields: [productId], references: [id])
+  exchanges ExchangeItem[]
   @@map("order_items")
 }
 
