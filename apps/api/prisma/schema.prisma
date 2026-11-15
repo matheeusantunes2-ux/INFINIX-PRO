@@ -66,6 +66,7 @@ model Company {
   entries   FinancialEntry[]
   orders    Order[]
   exchanges Exchange[]
+  storeCredits StoreCredit[]
   products  Product[]
   stockMovements StockMovement[]
   conversations Conversation[]
@@ -310,6 +311,7 @@ model Order {
   financialEntry FinancialEntry?
   stockMovements StockMovement[]
   exchanges Exchange[]
+  storeCredits StoreCredit[]
   @@index([companyId, status, openedAt])
   @@index([companyId, closedAt, sellerMembershipId])
   @@index([companyId, closedAt, unitId])
@@ -409,6 +411,7 @@ model Exchange {
   company     Company @relation(fields:[companyId], references:[id], onDelete:Cascade)
   order       Order @relation(fields:[orderId], references:[id], onDelete:Restrict)
   items       ExchangeItem[]
+  storeCredit StoreCredit?
   @@index([companyId, createdAt])
   @@index([companyId, orderId])
   @@map("exchanges")
@@ -430,6 +433,23 @@ model ExchangeItem {
   returnedProduct Product @relation("ReturnedProduct", fields:[returnedProductId], references:[id], onDelete:Restrict)
   replacementProduct Product? @relation("ReplacementProduct", fields:[replacementProductId], references:[id], onDelete:Restrict)
   @@map("exchange_items")
+}
+
+
+model StoreCredit {
+  id String @id @default(uuid()) @db.Uuid
+  companyId String @db.Uuid @map("company_id")
+  orderId String @db.Uuid @map("order_id")
+  exchangeId String @unique @db.Uuid @map("exchange_id")
+  amount Decimal @db.Decimal(14,2)
+  balance Decimal @db.Decimal(14,2)
+  status String @default("AVAILABLE")
+  createdAt DateTime @default(now()) @map("created_at")
+  company Company @relation(fields:[companyId],references:[id],onDelete:Cascade)
+  order Order @relation(fields:[orderId],references:[id],onDelete:Restrict)
+  exchange Exchange @relation(fields:[exchangeId],references:[id],onDelete:Restrict)
+  @@index([companyId,status,createdAt])
+  @@map("store_credits")
 }
 
 model Invitation {
