@@ -1,4 +1,5 @@
 import { ConflictException, Injectable, UnauthorizedException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { hashPassword, signAccessToken, verifyPassword } from './crypto';
 import { RegisterDto } from './dto/register.dto';
@@ -42,7 +43,7 @@ export class AuthService {
         data: { companyId: company.id, userId: user.id, action: 'COMPANY_REGISTERED', entity: 'Company', entityId: company.id },
       });
       return { company, user, membership };
-    }, { isolationLevel: 'Serializable' });
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
     const accessToken = signAccessToken({ sub: created.user.id, companyId: created.company.id, role: created.membership.role });
     return {
       accessToken, tokenType: 'Bearer', expiresIn: 900,
