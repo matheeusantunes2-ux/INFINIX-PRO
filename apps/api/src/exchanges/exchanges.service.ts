@@ -57,6 +57,7 @@ export class ExchangesService {
     }
    }
    if(difference.gt(0)) await tx.financialEntry.create({data:{companyId:user.companyId,type:'INCOME',status:'PAID',description:'Diferença recebida na troca '+exchange.id,amount:difference,dueAt:new Date(),paidAt:new Date(),category:'Trocas',paymentMethod:dto.paymentMethod,reference:exchange.id}});
+   if(difference.lt(0)) await tx.storeCredit.create({data:{companyId:user.companyId,orderId:order.id,exchangeId:exchange.id,amount:difference.abs(),balance:difference.abs(),status:'AVAILABLE'}});
    await tx.auditLog.create({data:{companyId:user.companyId,userId:user.sub,action:'EXCHANGE_COMPLETED',entity:'Exchange',entityId:exchange.id,metadata:{orderId:order.id,returnedValue:returnedValue.toString(),replacementValue:replacementValue.toString(),difference:difference.toString()}}});
    return tx.exchange.findFirstOrThrow({where:{id:exchange.id,companyId:user.companyId},include:{order:true,items:{include:{returnedProduct:true,replacementProduct:true}}}});
   });
