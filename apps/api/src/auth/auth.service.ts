@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import { ConflictException, Injectable, UnauthorizedException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { hashPassword, signAccessToken, verifyPassword } from './crypto';
 import { RegisterDto } from './dto/register.dto';
@@ -8,7 +8,18 @@ import { LoginDto } from './dto/login.dto';
 export class AuthService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async register(input: RegisterDto) {
+  async register(input: RegisterDto, bootstrapKey?: string) {
+    const configuredKey = process.env.BOOTSTRAP_ADMIN_KEY;
+    if (!configuredKey || configuredKey.length < 32) {
+      throw new ForbiddenException('Cadastro inicial desabilitado. Configure a chave de bootstrap no ambiente do servidor.');
+    }
+    if (!bootstrapKey || bootstrapKey !== configuredKey) {
+      throw new ForbiddenException('Chave de autorização inválida.');
+    }
+    const registeredUsers = await this.prisma.user.count();
+    if (registeredUsers > 0) {
+      throw new ForbiddenException('O cadastro inicial já foi utilizado. Novos usuários devem ser convidados pelo administrador.');
+    }
     const email = input.email.trim().toLowerCase();
     const slug = input.companySlug.trim().toLowerCase();
     const [existingUser, existingCompany] = await Promise.all([
