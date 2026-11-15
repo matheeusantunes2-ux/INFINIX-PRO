@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Headers, Post, Req, UseGuards } from '@nestjs/common';
 import { Request } from 'express';
 import { AuthService } from './auth.service';
 import { AuthGuard } from './auth.guard';
@@ -12,7 +12,7 @@ export class AuthController {
   constructor(private readonly auth: AuthService) {}
 
   @Post('register')
-  register(@Body() body: RegisterDto) { return this.auth.register(body); }
+  register(@Body() body: RegisterDto, @Headers('x-bootstrap-key') bootstrapKey?: string) { return this.auth.register(body, bootstrapKey); }
 
   @Post('login')
   login(@Body() body: LoginDto) { return this.auth.login(body); }
