@@ -5,6 +5,6 @@ export class OrdersController {
  @Get() list(@AuthUser() u:CurrentUser,@Query('page') p?:string,@Query('limit') l?:string,@Query('status') s?:string){return this.orders.list(u,Number(p)||1,Number(l)||20,s);}
  @Post() @Roles('OWNER','ADMIN','MANAGER','MEMBER') create(@AuthUser() u:CurrentUser,@Body() b:CreateOrderDto){return this.orders.create(u,b);}
  @Get(':id') get(@AuthUser() u:CurrentUser,@Param('id') id:string){return this.orders.get(u,id);}
- @Post(':id/checkout') @Roles('OWNER','ADMIN','MANAGER') checkout(@AuthUser() u:CurrentUser,@Param('id') id:string,@Body() b:CheckoutOrderDto){return this.orders.checkout(u,id,b);}
+ @Post(':id/checkout') @Roles('OWNER','ADMIN','MANAGER','MEMBER') checkout(@AuthUser() u:CurrentUser,@Param('id') id:string,@Body() b:CheckoutOrderDto){return this.orders.checkout(u,id,b);}
  @Post(':id/cancel') @Roles('OWNER','ADMIN','MANAGER') cancel(@AuthUser() u:CurrentUser,@Param('id') id:string){return this.orders.cancel(u,id);}
 }
