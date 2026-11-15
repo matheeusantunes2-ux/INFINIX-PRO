@@ -1,0 +1,46 @@
+name: API validation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/api/**'
+      - 'package.json'
+      - '.github/workflows/api-validation.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps/api/**'
+      - 'package.json'
+      - '.github/workflows/api-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-api:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install workspace dependencies
+        run: npm install --no-audit --no-fund
+      - name: Validate Prisma schema
+        working-directory: apps/api
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/infinix_ci
+        run: npx prisma validate
+      - name: Generate Prisma Client
+        working-directory: apps/api
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/infinix_ci
+        run: npx prisma generate
+      - name: Build API
+        run: npm run build:api
