@@ -8,6 +8,20 @@ on:
 jobs:
   api-check:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: infinix_pro
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d infinix_pro"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/infinix_pro?schema=public
       JWT_ACCESS_SECRET: ci-only-secret-that-is-not-used-in-production-32-chars-minimum
@@ -19,6 +33,7 @@ jobs:
       - run: npm install
       - run: npx prisma validate --schema apps/api/prisma/schema.prisma
       - run: npx prisma generate --schema apps/api/prisma/schema.prisma
+      - run: npx prisma migrate deploy --schema apps/api/prisma/schema.prisma
       - run: npm run build:api
   web-build:
     runs-on: ubuntu-latest
