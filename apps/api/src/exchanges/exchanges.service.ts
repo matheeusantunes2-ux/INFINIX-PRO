@@ -60,7 +60,7 @@ export class ExchangesService {
    if(difference.lt(0)) await tx.storeCredit.create({data:{companyId:user.companyId,orderId:order.id,exchangeId:exchange.id,amount:difference.abs(),balance:difference.abs(),status:'AVAILABLE'}});
    await tx.auditLog.create({data:{companyId:user.companyId,userId:user.sub,action:'EXCHANGE_COMPLETED',entity:'Exchange',entityId:exchange.id,metadata:{orderId:order.id,returnedValue:returnedValue.toString(),replacementValue:replacementValue.toString(),difference:difference.toString()}}});
    return tx.exchange.findFirstOrThrow({where:{id:exchange.id,companyId:user.companyId},include:{order:true,items:{include:{returnedProduct:true,replacementProduct:true}}}});
-  });
+  }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
  }
  async get(user:CurrentUser,id:string) {
   const exchange=await this.prisma.exchange.findFirst({where:{id,companyId:user.companyId},include:{order:true,items:{include:{returnedProduct:true,replacementProduct:true}}}});
