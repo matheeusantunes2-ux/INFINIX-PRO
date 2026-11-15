@@ -14,8 +14,9 @@ import { FeedModule } from './feed/feed.module';
 import { ChatModule } from './chat/chat.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { ExchangesModule } from './exchanges/exchanges.module';
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true }), PrismaModule, HealthModule, AuthModule, CompanyModule, ClientsModule, ProposalsModule, CalendarModule, FinanceModule, ProductsModule, OrdersModule, FeedModule, ChatModule, NotificationsModule, DashboardModule],
+  imports: [ConfigModule.forRoot({ isGlobal: true }), PrismaModule, HealthModule, AuthModule, CompanyModule, ClientsModule, ProposalsModule, CalendarModule, FinanceModule, ProductsModule, OrdersModule, FeedModule, ChatModule, NotificationsModule, DashboardModule, ExchangesModule],
 })
 export class AppModule {}
