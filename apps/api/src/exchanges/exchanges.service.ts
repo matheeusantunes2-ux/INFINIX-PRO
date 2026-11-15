@@ -47,7 +47,8 @@ export class ExchangesService {
    const exchange=await tx.exchange.create({data:{companyId:user.companyId,orderId:order.id,performedBy:user.sub,reason:dto.reason,returnedValue,replacementValue,difference,settlement:'STORE_CREDIT',paymentMethod:difference.gt(0)?dto.paymentMethod:null,notes:dto.notes||null,items:{create:lines.map(({replacement,...data})=>data)}},include:{items:true}});
    for(const line of lines) {
     if(line.condition==='SELLABLE') {
-     await tx.product.update({where:{id:line.returnedProductId},data:{stock:{increment:line.returnedQuantity}}});
+     const returned=await tx.product.updateMany({where:{id:line.returnedProductId,companyId:user.companyId},data:{stock:{increment:line.returnedQuantity}}});
+     if(!returned.count) throw new NotFoundException('Produto devolvido não pertence a esta empresa.');
      await tx.stockMovement.create({data:{companyId:user.companyId,productId:line.returnedProductId,type:'IN',quantity:line.returnedQuantity,reason:'Troca '+exchange.id+' - produto em condição de revenda'}});
     }
     if(line.replacement) {
