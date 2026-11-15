@@ -4,8 +4,8 @@
 
 Candidato gratuito selecionado para avaliação: Neon Free, com um projeto PostgreSQL independente por produto. Não criar dois bancos dentro do mesmo projeto: a separação deve ocorrer no nível de projeto/instância para manter compute, credenciais e ciclo de vida isolados.
 
-- Projeto 1: `infinix-pro` — usado exclusivamente pela API do INFINIX PRO.
-- Projeto 2: `infinix-pdv` — usado exclusivamente pela API do INFINIX PDV.
+- Projeto 1: `tiny-leaf-74606390` — projeto Neon já existente, reservado exclusivamente ao INFINIX PRO (organização `org-holy-lake-82375002`).
+- Projeto 2: `infinix-pdv-db` — novo projeto Neon a ser criado, reservado exclusivamente ao INFINIX PDV.
 - Nenhum dos projetos pode apontar para o banco do TORCIDA+.
 - Não copiar dados, tabelas, roles, migrations ou credenciais de um produto para o outro.
 
@@ -22,13 +22,13 @@ Esses limites permitem tecnicamente manter PRO e PDV em projetos gratuitos disti
 ## Variáveis de ambiente
 
 ### Serviço API INFINIX PRO
-- `DATABASE_URL`: connection string exclusiva do projeto Neon `infinix-pro`.
+- `DATABASE_URL`: connection string exclusiva do projeto Neon `tiny-leaf-74606390`.
 - `JWT_SECRET`: segredo exclusivo do PRO.
 - `WEB_ORIGIN`: origem do frontend PRO.
 - Outras variáveis de integração específicas do PRO, se necessárias.
 
 ### Serviço API INFINIX PDV
-- `DATABASE_URL`: connection string exclusiva do projeto Neon `infinix-pdv`.
+- `DATABASE_URL`: connection string exclusiva do projeto Neon `infinix-pdv-db`.
 - `JWT_SECRET`: segredo exclusivo do PDV.
 - `BOOTSTRAP_ADMIN_KEY`: chave temporária de provisionamento do primeiro proprietário, com pelo menos 32 caracteres.
 - `WEB_ORIGIN`: origem do frontend PDV.
@@ -37,7 +37,7 @@ Nunca reutilizar o mesmo valor de `DATABASE_URL`, `JWT_SECRET` ou `BOOTSTRAP_ADM
 
 ## Ordem de execução
 
-1. Criar dois projetos Neon separados, ambos no plano Free.
+1. Manter `tiny-leaf-74606390` reservado ao INFINIX PRO e criar `infinix-pdv-db` em projeto Neon separado, ambos no plano Free.
 2. Guardar cada connection string diretamente nos secrets do respectivo serviço, sem publicá-las no GitHub ou no chat.
 3. Extrair o PDV para o repositório próprio antes de configurar o deploy definitivo.
 4. Criar schemas Prisma mínimos e independentes; o schema PDV deve conter identidade local (empresa, usuário, associação e papéis) e apenas catálogo, estoque, vendas, trocas, créditos e auditoria do PDV.
@@ -51,9 +51,15 @@ Nunca reutilizar o mesmo valor de `DATABASE_URL`, `JWT_SECRET` ou `BOOTSTRAP_ADM
 - [x] CI do monorepo validado em PostgreSQL 16 temporário: Prisma validate/generate, migrate deploy, build da API e build web passaram no run 43753082877.
 - [x] Limites publicados do Neon Free consultados em 15/11/2026.
 - [ ] Repositório independente `INFINIX-PDV` criado.
-- [ ] Dois projetos Neon provisionados pelo proprietário.
+- [x] Projeto Neon `tiny-leaf-74606390` identificado e reservado ao INFINIX PRO (a conexão ainda não foi configurada).
+- [ ] Projeto Neon independente `infinix-pdv-db` criado para o INFINIX PDV.
 - [ ] Secrets configurados individualmente nos serviços.
 - [ ] Extração, migrations e deploy independentes concluídos.
 - [ ] Conta OWNER do PDV criada e login validado.
 
 **Importante:** nenhum banco externo foi criado nesta etapa e nenhuma credencial foi gerada. O login de produção continua indisponível até concluir o provisionamento e o deploy independentes.
+
+
+## Atualização de decisão — 15/11/2026
+
+O proprietário confirmou a divisão: o projeto Neon existente `tiny-leaf-74606390` fica exclusivo do INFINIX PRO; o INFINIX PDV terá um segundo projeto Neon independente chamado `infinix-pdv-db`. A confirmação não significa que a connection string já foi instalada, nem que qualquer banco recebeu migrations. Não configurar ou migrar o banco do PDV até o segundo projeto estar criado e identificado.
