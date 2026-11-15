@@ -38,7 +38,7 @@ A aplicação web fica em http://localhost:5173.
 ## Autenticação inicial
 
 A API oferece os endpoints:
-- `POST /api/auth/register`: cria a primeira conta, empresa e vínculo OWNER em uma transação.
+- `POST /api/auth/register`: cria a primeira conta, empresa e vínculo OWNER em uma transação. Exige o cabeçalho `x-bootstrap-key`, correspondente a `BOOTSTRAP_ADMIN_KEY` configurada no servidor (mínimo 32 caracteres), e só funciona enquanto não existir nenhum usuário. Depois do primeiro cadastro, a rota fica bloqueada.
 - `POST /api/auth/login`: autentica por e-mail e senha. Se houver mais de uma empresa vinculada, informe `companySlug`.
 - `GET /api/auth/me`: retorna o usuário e a empresa do token Bearer.
 
@@ -53,7 +53,7 @@ Exemplo de cadastro:
 }
 ```
 
-Configure `JWT_ACCESS_SECRET` com pelo menos 32 caracteres aleatórios antes de iniciar a API. O token de acesso expira em 15 minutos. Esta etapa ainda não inclui recuperação de senha, refresh token, MFA ou limitação de tentativas; não exponha a API publicamente até essas proteções e os testes de segurança estarem concluídos.
+Configure `JWT_ACCESS_SECRET` e `BOOTSTRAP_ADMIN_KEY` com pelo menos 32 caracteres aleatórios cada antes de iniciar a API. Nunca envie nem versione essas chaves. Para o cadastro inicial, envie `x-bootstrap-key` no cabeçalho da requisição; remova a variável `BOOTSTRAP_ADMIN_KEY` do ambiente assim que a conta OWNER for criada. O token de acesso expira em 15 minutos. Esta etapa ainda não inclui recuperação de senha, refresh token, MFA ou limitação de tentativas; não exponha a API publicamente até essas proteções e os testes de segurança estarem concluídos.
 
 
 ## Contexto empresarial e permissões
